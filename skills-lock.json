@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "skills": {
+    "clean-architecture": {
+      "source": "tokenaissance/clean-architecture",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "0b0b96ccf4869923a157a9f9377af7fe0d5182bfaa818192d5f47ceb027cf54c"
+    },
+    "clean-code": {
+      "source": "pixel-process-ug/superkit-agents",
+      "sourceType": "github",
+      "skillPath": "templates/skills/clean-code/SKILL.md",
+      "computedHash": "c07507509fe3091065b67aa96ef895cbde0ad9a0189622956e8bfc6569ae469d"
+    },
+    "pdf-processing": {
+      "source": "pixel-process-ug/superkit-agents",
+      "sourceType": "github",
+      "skillPath": "templates/skills/pdf-processing/SKILL.md",
+      "computedHash": "397e384b9797d2e6cb0cf1e2e9ae6926cda0ff51b59cb5a070f4865bca9bcb68"
+    },
+    "senior-architect": {
+      "source": "pixel-process-ug/superkit-agents",
+      "sourceType": "github",
+      "skillPath": "templates/skills/senior-architect/SKILL.md",
+      "computedHash": "7ff01eaba837f937b6b59ef0c06823d01ea73da0354884936224bb4d7e9cce43"
+    },
+    "spec-driven-development": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/spec-driven-development/SKILL.md",
+      "computedHash": "d4dc15caa8d97749267da68676aeadff3fb5b8d9a4462664937137ac09610e4f"
+    },
+    "ui-design-system": {
+      "source": "pixel-process-ug/superkit-agents",
+      "sourceType": "github",
+      "skillPath": "templates/skills/ui-design-system/SKILL.md",
+      "computedHash": "c4bb956f17229c4886aa6b7ea0b21286302d3592383aaef2a56ab11fd8e4f291"
+    }
+  }
+}
