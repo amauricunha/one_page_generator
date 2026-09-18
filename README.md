@@ -1,9 +1,12 @@
 # 📄 One Page Generator: Co-Pilot para Relatórios Industriais
 
 [![Clean Architecture](https://img.shields.io/badge/Architecture-Clean%20Architecture-blue.svg)](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
-[![Clean Code](https://img.shields.io/badge/Code-Clean%20Code-green.svg)](#-princípios-de-engenharia-e-clean-code)
+[![Clean Code](https://img.shields.io/badge/Code-Clean%20Code-green.svg)](#-skills-de-agente-instaladas-no-projeto)
+[![Docker](https://img.shields.io/badge/Architecture-100%25%20Dockerized-2496ED.svg?logo=docker&logoColor=white)](#-arquitetura-100-dockerizada-zero-bare-metal)
 [![Standard](https://img.shields.io/badge/Format-ISO%20216%20A4%20Strict-orange.svg)](#-engine-de-layout-a4-e-detecção-de-overflow)
 [![Local-First AI](https://img.shields.io/badge/AI-100%25%20On--Premise%20Private-purple.svg)](#-motor-cognitivo-e-topologia-de-hardware)
+[![Rust Axum](https://img.shields.io/badge/Backend%20V2-Rust%20Axum-DEA584.svg?logo=rust&logoColor=white)](#-roadmap-de-escala-futura-v2)
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL%2016-336791.svg?logo=postgresql&logoColor=white)](#-roadmap-de-escala-futura-v2)
 [![License](https://img.shields.io/badge/License-MIT-gray.svg)](LICENSE)
 
 > Plataforma inteligente para ingestão de propostas complexas de PD&I (FINEP, FAPESP, Embrapii), avaliação de completude, edição visual em página única A4 e exportação vetorial em PDF de alta fidelidade sem quebra de layout.
@@ -23,6 +26,22 @@ O **One Page Generator** atua como um co-pilot de engenharia e redação técnic
 
 ---
 
+## 🐳 Arquitetura 100% Dockerizada (Zero Bare-Metal)
+
+> ⚠️ **DIRETRIZ INVIOLÁVEL DE ENGENHARIA**: Todos os serviços da aplicação operam **estritamente em containers Docker**. É terminantemente proibida a execução direta (*bare-metal*) de Ollama, vLLM, Python, Node ou PostgreSQL no sistema operacional do host. A aceleração por GPU opera via **NVIDIA Container Toolkit**.
+
+### Topologia de Containers:
+
+| Serviço / Container | Imagem Base | Porta Exposta | Responsabilidade |
+|---|---|---|---|
+| `onepage_frontend_dev` | Node 20 / Alpine | `3000:3000` | Interface SPA React 19 com Hot-Reload montado em volume |
+| `onepage_backend_dev` | Python 3.11-slim | `8000:8000` | API FastAPI, PyMuPDF e docTR (CPU isolada para evitar OOM) |
+| `onepage_ollama_dev` | `ollama/ollama:latest` | `11434:11434` | Runtime de inferência local com GPU Passthrough (RTX Ada 1000 - 6GB) |
+| `onepage_postgres_dev` | `postgres:16-alpine` | `5432:5432` | Banco relacional com volume persistente para modelos, usuários e rascunhos |
+| `onepage_llm_prod` | `vllm/vllm-openai` | `8001:8000` | Servidor corporativo de produção para Nemotron-70B em RTX 3090 (24GB) |
+
+---
+
 ## 🏛️ Arquitetura do Sistema (Clean Architecture)
 
 O projeto adota os princípios de **Clean Architecture** (Robert C. Martin) e o padrão **Ports & Adapters (Hexagonal)**, garantindo independência de frameworks, testabilidade total e inversão de dependências (DIP):
@@ -30,14 +49,14 @@ O projeto adota os princípios de **Clean Architecture** (Robert C. Martin) e o 
 ```
                       +-------------------------------------------------------------+
                       |                 4. FRAMEWORKS & DRIVERS                     |
-                      |   FastAPI | React 19 / Vite | Ollama | vLLM | Puppeteer     |
+                      |   FastAPI / Axum | React 19 / Vite | Ollama | vLLM | Postgres|
                       +------------------------------+------------------------------+
                                                      |
                                                      v
                       +-------------------------------------------------------------+
                       |                  3. INTERFACE ADAPTERS                      |
                       |   REST Controllers | OllamaAdapter | VllmAdapter            |
-                      |   HybridPdfExtractor | PuppeteerPdfAdapter | Repositories   |
+                      |   HybridPdfExtractor | PuppeteerPdfAdapter | SqlxRepository |
                       +------------------------------+------------------------------+
                                                      |
                                                      v
@@ -55,53 +74,46 @@ O projeto adota os princípios de **Clean Architecture** (Robert C. Martin) e o 
                       +-------------------------------------------------------------+
 ```
 
-### Regras Fundamentais:
-- **Regra de Dependência Inward**: Nenhuma camada interna conhece detalhes das camadas externas.
-- **Portas Abstratas (`Ports`)**: Casos de uso interagem com interfaces (`IDocumentExtractor`, `ICognitiveEngine`, `IPdfRenderer`, `IReportRepository`).
-- **Adaptadores Intercambiáveis**: Trocar de Ollama para vLLM, ou de PyMuPDF para outro parser, não altera uma única linha de regras de negócio.
-
 ---
 
-## 🧠 Motor Cognitivo e Topologia de Hardware
+## 🚀 Roadmap de Escala Futura (V2)
 
-A inferência opera em arquitetura **100% on-premise** para garantir conformidade com sigilo industrial e privacidade de dados (LGPD):
+A evolução para a escala corporativa está formalmente especificada em [`docs/specs/SPEC-future-scale.md`](file:///c:/workspace/one_page_generator/docs/specs/SPEC-future-scale.md) e compreende:
 
-| Especificação | Ambiente Dev (Local / Edge) | Ambiente Prod (Servidor Corporativo) |
-|---|---|---|
-| **GPU Suportada** | 1x NVIDIA RTX Ada 1000 (6GB VRAM) | 1x NVIDIA RTX 3090 (24GB VRAM) |
-| **Engine de Inferência** | Ollama / llama.cpp Server | vLLM OpenAI-Compatible Server |
-| **Modelo Recomendado** | `Qwen2.5-7B-Instruct` (GGUF Q4_K_M) | `Llama-3.1-Nemotron-70B-Instruct-AWQ` |
-| **Janela de Contexto** | 4.096 tokens | 16.384 tokens |
-| **Orçamento de VRAM** | 4.2GB (Pesos) + 0.8GB (KV) + 0.6GB (Sys) = **5.6GB** | 18.5GB (Pesos) + 3.0GB (KV) + 1.5GB (Sys) = **23.0GB** |
-| **Estratégia de OCR** | OCR pesado delegado à CPU (evita CUDA OOM) | vLLM dedicado em GPU; workers de OCR isolados |
-
----
-
-## 📐 Pipeline de Ingestão e Engine de Layout A4
-
-### 1. Ingestão Híbrida com Índice de Sanidade ($TSI$)
-Propostas com tabelas CMap corrompidas ou páginas escaneadas são tratadas automaticamente:
-1. **PyMuPDF / pdfplumber**: Extração vetorial ultrarrápida.
-2. **Cálculo de $TSI$**: Razão entre caracteres UTF-8 legíveis e o total extraído. Se $TSI < 0.85$, dispara fallback automático.
-3. **docTR / Marker**: OCR neural estruturado com recuperação de bounding boxes e tabelas orçamentárias.
-
-### 2. Layout A4 Anti-Overflow em Tempo Real
-- **Grid ISO 216**: Resolução base $794\text{px} \times 1123\text{px}$ (96 DPI) e $2480\text{px} \times 3508\text{px}$ (300 DPI para impressão).
-- **Detecção de Overflow**: `ResizeObserver` monitora a altura do conteúdo contra a altura máxima ($1123\text{px}$).
-- **Taxa de Compressão ($CR$)**: Caso $h_{content} > h_{A4}$, o sistema calcula $CR = h_{A4} / h_{content}$ e permite acionar a condensação inteligente com um clique.
-- **Temas Institucionais**: Alternância instantânea via CSS Custom Properties (`SENAI`, `SESI`, `FIESC`, `IEL` e `Corporativo`).
+1. **Backend de Alta Performance em Rust (Axum)**:
+   - Migração do orquestrador para **Rust (Axum + Tokio + Tower)** para ultra performance, segurança estrita de memória e latência de leitura $< 15\text{ms}$.
+2. **Persistência Relacional em PostgreSQL com Migrations**:
+   - Controle de esquema determinístico com **`sqlx-cli`** com migrations versionadas e idempotentes (`up`/`down`).
+   - Tabelas estruturadas: `users`, `user_profiles`, `user_preferences`, `report_templates`, `project_drafts` e `archived_documents`.
+3. **Arquivamento Auditável de Documentos**:
+   - Armazenamento com cálculo obrigatório de hash **SHA-256** para auditoria e garantia de conformidade técnica com órgãos financiadores.
+4. **Salvamento de Projetos e Rascunhos em Nuvem**:
+   - Persistência atrelada à conta do usuário com controle de versionamento e suporte a recuperação offline.
+5. **Autenticação Segura & Gestão de Contas**:
+   - Login tradicional com **E-mail / Senha** (hash seguro via `Argon2id`).
+   - Social Login com **Google OAuth 2.0 / OpenID Connect**.
+   - Fluxo de **complemento de perfil opcional** pós-login (unidade SENAI, instituição parceira, cargo).
+   - Sessões protegidas com Refresh Tokens em cookies `HttpOnly` com CSRF protection.
+6. **Configuração de Usuário: Modo Claro e Modo Escuro (UI)**:
+   - **Tema da Aplicação**: Alternância entre Modo Claro (`light`) e Escuro (`dark`) nas preferências do usuário para menus, modais e barra de ferramentas.
+   - **Tema do Documento A4**: Preservação inviolável da folha física A4 sobre **fundo branco ($#FFFFFF$)**, garantindo que o dark mode da interface nunca afete as cores oficiais da impressão.
 
 ---
 
 ## 🛠️ Skills de Agente Instaladas no Projeto
 
-As seguintes skills especializadas foram instaladas no repositório (`.agents/skills/`) via [skills.sh](https://www.skills.sh/) para apoiar o ciclo de desenvolvimento:
+As seguintes skills especializadas estão instaladas no repositório (`.agents/skills/`) via [skills.sh](https://www.skills.sh/) para apoiar o ciclo completo de desenvolvimento e governança:
 
-*   [`clean-code`](file:///.agents/skills/clean-code/SKILL.md): Princípios SOLID, refatoração de code smells, limites de complexidade ciclomática e padrão Result Type.
-*   [`clean-architecture`](file:///.agents/skills/clean-architecture/SKILL.md): Decomposição em 4 camadas concêntricas, Inversão de Dependências (DIP) e filtro anti-over-engineering.
-*   [`pdf-processing`](file:///.agents/skills/pdf-processing/SKILL.md): Padrões de manipulação, extração tabular e renderização vetorial de PDFs.
-*   [`senior-architect`](file:///.agents/skills/senior-architect/SKILL.md): Governança de ADRs, decisões arquiteturais e análise de trade-offs.
-*   [`ui-design-system`](file:///.agents/skills/ui-design-system/SKILL.md): Tokens de interface, padrões de componentes reativos e design responsivo.
+*   [`spec-driven-development`](file:///.agents/skills/spec-driven-development/SKILL.md): Fluxo metodológico em 4 fases com gates de aceitação (*Specify $\rightarrow$ Plan $\rightarrow$ Tasks $\rightarrow$ Implement*).
+*   [`clean-code`](file:///.agents/skills/clean-code/SKILL.md): Princípios SOLID, refatoração de code smells, limites de complexidade e padrão *Result Type*.
+*   [`clean-architecture`](file:///.agents/skills/clean-architecture/SKILL.md): Decomposição em 4 camadas concêntricas e Inversão de Dependências (DIP).
+*   [`axum-web-framework`](file:///.agents/skills/axum-web-framework/SKILL.md): Boas práticas para desenvolvimento do backend de escala em Rust com Axum.
+*   [`database-schema-design`](file:///.agents/skills/database-schema-design/SKILL.md): Modelagem de banco de dados relacional, estratégias de indexação e migrations.
+*   [`oauth-implementation`](file:///.agents/skills/oauth-implementation/SKILL.md): Fluxos de autorização OAuth 2.0, OpenID Connect e integração Google.
+*   [`security-review`](file:///.agents/skills/security-review/SKILL.md): Auditoria de vulnerabilidades, hash de senhas e gestão de segredos.
+*   [`pdf-processing`](file:///.agents/skills/pdf-processing/SKILL.md): Padrões de manipulação, extração tabular e renderização de PDFs.
+*   [`senior-architect`](file:///.agents/skills/senior-architect/SKILL.md): Governança de ADRs e decisões arquiteturais.
+*   [`ui-design-system`](file:///.agents/skills/ui-design-system/SKILL.md): Design tokens, temas claro/escuro e componentes reativos.
 
 ---
 
@@ -110,59 +122,67 @@ As seguintes skills especializadas foram instaladas no repositório (`.agents/sk
 ```
 one_page_generator/
 ├── .agents/
-│   └── skills/                 # Skills do agente no padrão de projeto
-├── backend/                    # Core Python (FastAPI, PyMuPDF, OCR)
+│   └── skills/                 # Skills do agente no formato de projeto (skills.sh)
+├── backend/                    # Core Python (FastAPI / docTR / PyMuPDF)
+│   ├── Dockerfile
+│   ├── Dockerfile.dev
 │   ├── src/
-│   │   ├── domain/             # Entidades de negócio puras
-│   │   ├── application/        # Casos de uso e portas de entrada/saída
-│   │   ├── adapters/           # Adaptadores de LLM, PDF e Repositório
-│   │   └── infrastructure/     # Rotas HTTP, dependências e servidor
 │   └── tests/
 ├── frontend/                   # Interface Web (React 19 + TypeScript)
+│   ├── Dockerfile
+│   ├── Dockerfile.dev
 │   ├── src/
-│   │   ├── components/         # Container A4, Toolbar, Seções
-│   │   ├── hooks/              # useLayoutMetrics, useAutoSave
-│   │   └── styles/             # Paletas SENAI/SESI/FIESC/IEL
 │   └── tests/
-├── spec/                       # Documentação Técnica e Especificações
-│   ├── research.md             # Análise de viabilidade e referências
-│   └── masterplan.md           # Masterplan Arquitetural Completo
+├── docs/                       # Documentação Técnica e Especificações
+│   ├── research.md             # Análise de viabilidade original
+│   ├── masterplan.md           # Masterplan Arquitetural Completo
+│   └── specs/                  # Especificações Formais SDD
+│       ├── capability-map.md
+│       ├── SPEC-domain-core.md
+│       ├── SPEC-document-ingestion.md
+│       ├── SPEC-cognitive-engine.md
+│       ├── SPEC-layout-editor.md
+│       ├── SPEC-pdf-export.md
+│       ├── SPEC-orchestrator-api.md
+│       └── SPEC-future-scale.md
+├── docker-compose.yml          # Orquestração de Containers em Produção
+├── docker-compose.dev.yml      # Orquestração de Containers em Desenvolvimento
 ├── LICENSE
 └── README.md
 ```
 
 ---
 
-## 🚀 Como Executar o Projeto
+## 🚀 Como Executar o Projeto (Docker-First)
 
 ### Pré-requisitos
-- Node.js 20+ e npm
-- Python 3.11+
-- Instância do **Ollama** (para dev) ou **vLLM** (para produção) com o modelo configurado
+- **Docker** 24+ e **Docker Compose** v2+
+- **NVIDIA Container Toolkit** (para aceleração por GPU no Ollama/vLLM)
 
-### 1. Inicialização do Backend
+### 1. Inicializar Todos os Serviços em Modo de Desenvolvimento
 ```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate  # ou .venv\Scripts\activate no Windows
-pip install -r requirements.txt
-uvicorn src.infrastructure.api.main:app --reload --port 8000
+# Sobe Frontend, Backend, PostgreSQL e Ollama em containers isolados
+docker compose -f docker-compose.dev.yml up -d
 ```
 
-### 2. Inicialização do Frontend
+### 2. Configurar o Modelo de IA no Container Ollama
 ```bash
-cd frontend
-npm install
-npm run dev
+# Baixar o modelo Qwen2.5-7B diretamente dentro do container
+docker compose -f docker-compose.dev.yml exec ollama ollama pull qwen2.5:7b-instruct-q4_K_M
 ```
 
-### 3. Configuração do Motor LLM Local (Ambiente Dev)
-```bash
-# Baixar o modelo recomendado para GPU 6GB
-ollama pull qwen2.5:7b-instruct-q4_K_M
+### 3. Acessar a Aplicação
+- **Interface Web**: [http://localhost:3000](http://localhost:3000)
+- **API Swagger / OpenAPI**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Ollama API Local**: [http://localhost:11434](http://localhost:11434)
 
-# Verificar disponibilidade da API OpenAI-compatible
-curl http://localhost:11434/v1/models
+### 4. Executar a Suíte de Testes dentro dos Containers
+```bash
+# Testes do Backend
+docker compose -f docker-compose.dev.yml exec backend pytest
+
+# Testes do Frontend
+docker compose -f docker-compose.dev.yml exec frontend npm run test
 ```
 
 ---
@@ -172,14 +192,7 @@ curl http://localhost:11434/v1/models
 * 🗺️ [Capability Map & Ordem de Construção](file:///c:/workspace/one_page_generator/docs/specs/capability-map.md)
 * 📋 [Masterplan Arquitetural Completo](file:///c:/workspace/one_page_generator/docs/masterplan.md)
 * 🔬 [Pesquisa Tecnológica e Levantamento Original](file:///c:/workspace/one_page_generator/docs/research.md)
-
-### Especificações Formais por Módulo:
-1. [`SPEC-domain-core.md`](file:///c:/workspace/one_page_generator/docs/specs/SPEC-domain-core.md): Entidades, Value Objects e Invariantes
-2. [`SPEC-document-ingestion.md`](file:///c:/workspace/one_page_generator/docs/specs/SPEC-document-ingestion.md): Pipeline Híbrido, TSI e Fallback OCR
-3. [`SPEC-cognitive-engine.md`](file:///c:/workspace/one_page_generator/docs/specs/SPEC-cognitive-engine.md): Orquestração LLM, Reescrita e Condensação
-4. [`SPEC-layout-editor.md`](file:///c:/workspace/one_page_generator/docs/specs/SPEC-layout-editor.md): Container A4, ResizeObserver e Auto-Save
-5. [`SPEC-pdf-export.md`](file:///c:/workspace/one_page_generator/docs/specs/SPEC-pdf-export.md): Puppeteer Headless e CSS Paged Media
-6. [`SPEC-orchestrator-api.md`](file:///c:/workspace/one_page_generator/docs/specs/SPEC-orchestrator-api.md): Rotas FastAPI e Injeção de Dependências
+* ⚡ [Especificação de Escala Futura (Rust, Postgres, Auth, Temas)](file:///c:/workspace/one_page_generator/docs/specs/SPEC-future-scale.md)
 
 ---
 

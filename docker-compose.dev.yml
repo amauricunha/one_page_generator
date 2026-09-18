@@ -1,0 +1,91 @@
+version: "3.9"
+
+services:
+  # -------------------------------------------------------------
+  # Frontend Dev: Vite com Hot-Reload via Volume Montado
+  # -------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: onepage_frontend_dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    networks:
+      - onepage_dev_net
+
+  # -------------------------------------------------------------
+  # Backend Dev: FastAPI com Reload Automático via Volume Montado
+  # -------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: onepage_backend_dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - archived_docs_dev:/app/storage/archived_docs
+    environment:
+      - ENVIRONMENT=development
+      - COGNITIVE_ENGINE_URL=http://ollama:11434/v1
+      - COGNITIVE_MODEL_NAME=qwen2.5:7b-instruct-q4_K_M
+      - OCR_EXECUTION_DEVICE=cpu
+      - DATABASE_URL=postgresql://onepage_user:onepage_pass@postgres:5432/onepage_db
+    depends_on:
+      - postgres
+      - ollama
+    networks:
+      - onepage_dev_net
+
+  # -------------------------------------------------------------
+  # LLM Local Containerizado: Ollama com GPU Passthrough (Ada 1000)
+  # -------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: onepage_ollama_dev
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models_dev:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - onepage_dev_net
+
+  # -------------------------------------------------------------
+  # PostgreSQL Dev Containerizado
+  # -------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: onepage_postgres_dev
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=onepage_db
+      - POSTGRES_USER=onepage_user
+      - POSTGRES_PASSWORD=onepage_pass
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    networks:
+      - onepage_dev_net
+
+networks:
+  onepage_dev_net:
+    driver: bridge
+
+volumes:
+  postgres_dev_data:
+  ollama_models_dev:
+  archived_docs_dev:

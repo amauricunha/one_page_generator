@@ -26,16 +26,16 @@ Construir a interface do usuário web reativa que renderiza o One Page Report em
 - **Persistência**: `localForage` (IndexedDB Wrapper) com debounce de 2.0s
 - **Detecção de Layout**: Web APIs nativas (`ResizeObserver`, `MutationObserver`)
 
-### Executable Commands:
+### Executable Docker Commands:
 ```bash
-# Executar servidor de desenvolvimento local
-npm run dev --prefix frontend
+# Iniciar o frontend em container de desenvolvimento (porta 3000 com live-reload)
+docker compose -f docker-compose.dev.yml up -d frontend
 
-# Executar testes unitários e de componentes
-npm run test --prefix frontend
+# Executar testes unitários e de componentes dentro do container
+docker compose -f docker-compose.dev.yml exec frontend npm run test
 
-# Executar verificação de tipos e linter
-npm run lint --prefix frontend && npm run typecheck --prefix frontend
+# Executar verificação estática de tipos e linting no container
+docker compose -f docker-compose.dev.yml exec frontend npm run lint && docker compose -f docker-compose.dev.yml exec frontend npm run typecheck
 ```
 
 ---

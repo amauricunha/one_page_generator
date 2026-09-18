@@ -25,13 +25,13 @@ Garantir a renderização vetorial e exportação do One Page Report em arquivo 
 - **Padrão de Impressão**: CSS Paged Media W3C (`@page`)
 - **Fontes**: Embutimento local WOFF2 via Base64 para garantir independência do sistema operacional do host
 
-### Executable Commands:
+### Executable Docker Commands:
 ```bash
-# Executar testes unitários e de fidelidade do exportador PDF
-pytest backend/tests/integration/pdf -v -k "test_single_page_pdf"
+# Executar testes de fidelidade de renderização PDF dentro do container backend
+docker compose -f docker-compose.dev.yml exec backend pytest tests/integration/pdf -v -k "test_single_page_pdf"
 
-# Gerar PDF de teste a partir do snapshot CYBERTECH
-python backend/src/adapters/pdf/export_cli.py --input docs/samples/cybertech_report.json --output test_output.pdf
+# Gerar PDF de teste dentro do container a partir do snapshot CYBERTECH
+docker compose -f docker-compose.dev.yml exec backend python src/adapters/pdf/export_cli.py --input docs/samples/cybertech_report.json --output storage/test_output.pdf
 ```
 
 ---

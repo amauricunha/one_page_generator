@@ -51,18 +51,27 @@ graph TD
 | `layout-editor` | Interface WYSIWYG A4 interativa, loop reativo de detecção de overflow via `ResizeObserver`, seletor de temas CSS (SENAI, SESI, FIESC, IEL), upload Base64 e persistência local debounced (IndexedDB). | `domain-core` | [`SPEC-layout-editor.md`](file:///c:/workspace/one_page_generator/docs/specs/SPEC-layout-editor.md) |
 | `pdf-export` | Engine de exportação vetorial de alta fidelidade via Headless Chromium (Puppeteer), regras de CSS Paged Media (`@page`), embutimento de fontes WOFF2 e garantia de 1 página A4 sem cortes. | `domain-core`, `layout-editor` | [`SPEC-pdf-export.md`](file:///c:/workspace/one_page_generator/docs/specs/SPEC-pdf-export.md) |
 | `orchestrator-api` | Controladores REST/SSE em FastAPI, injeção de dependências, orquestração de chamadas assíncronas, gerenciamento de erros globais e integração ponta a ponta. | `domain-core`, `document-ingestion`, `cognitive-engine`, `pdf-export` | [`SPEC-orchestrator-api.md`](file:///c:/workspace/one_page_generator/docs/specs/SPEC-orchestrator-api.md) |
+| `future-scale` | **(Escala Futura / V2)**: Backend de ultra performance em **Rust (Axum)**, persistência em **PostgreSQL** com migrations versionadas, arquivamento auditável de documentos, salvamento de rascunhos na conta do usuário, autenticação (E-mail/Senha + Google OAuth 2.0 com complemento de perfil) e alternância entre Modo Claro/Escuro na UI. | `domain-core`, `capability-map` | [`SPEC-future-scale.md`](file:///c:/workspace/one_page_generator/docs/specs/SPEC-future-scale.md) |
 
 ---
 
-## 3. Ordem de Construção (Build Order)
+## 3. Diretriz Inviolável de Infraestrutura: Dockerização Total
 
-A implementação deve seguir estritamente a ordem de resolução de dependências para viabilizar Test-Driven Development (TDD) e isolamento:
+> ⚠️ **REGRA DE ARQUITETURA**: É estritamente proibida a execução de qualquer serviço (Ollama, vLLM, Backend Python/Rust, Frontend Vite ou PostgreSQL) diretamente no sistema operacional do host (*bare-metal*). Toda a pilha do sistema deve operar exclusivamente dentro de containers Docker orquestrados via `docker-compose.yml` (Produção) ou `docker-compose.dev.yml` (Desenvolvimento com hot-reload e GPU passthrough).
+
+---
+
+## 4. Ordem de Construção (Build Order)
+
+A implementação segue estritamente a ordem de resolução de dependências para viabilizar Test-Driven Development (TDD) e isolamento:
 
 1. **Fase 1 (Fundação)**: `domain-core`  
    *Justificativa*: Estabelece os contratos e tipos primitivos de dados consumidos por todas as camadas.
-2. **Fase 2 (Serviços e Adaptadores de Extração & IA)**: `document-ingestion` e `cognitive-engine` (em paralelo)  
+2. **Fase 2 (Serviços e Adaptadores de Extração & IA em Containers)**: `document-ingestion` e `cognitive-engine` (em paralelo)  
    *Justificativa*: Permitem o processamento e inteligência sobre arquivos reais antes de montar a UI final.
 3. **Fase 3 (Renderização & Interatividade Visual)**: `layout-editor` e `pdf-export`  
    *Justificativa*: Constrói o container A4 e o motor de impressão vetorial com base no esquema validado.
-4. **Fase 4 (Integração & Entrega)**: `orchestrator-api`  
-   *Justificativa*: Conecta os serviços backend e frontend em um fluxo unificado e pronto para homologação.
+4. **Fase 4 (Integração & Entrega Inicial)**: `orchestrator-api`  
+   *Justificativa*: Conecta os serviços backend e frontend em containers unificados prontos para homologação.
+5. **Fase 5 (Escala Corporativa & V2)**: `future-scale`  
+   *Justificativa*: Transição do backend para Rust (Axum), PostgreSQL com migrations, autenticação multi-provedor (E-mail e Google), salvamento em nuvem e suporte a Dark/Light Mode.

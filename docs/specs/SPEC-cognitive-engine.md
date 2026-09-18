@@ -22,17 +22,23 @@ Orquestrar a inteligência artificial generativa local (on-premise) para as 4 fu
 
 - **Linguagem**: Python 3.11+
 - **Bibliotecas**: `httpx` (Async HTTP client), `pydantic v2`, `jinja2` (templating de prompts estruturados)
-- **Engines Suportadas**:
-  - **Dev**: Ollama (`http://localhost:11434/v1`) com `Qwen2.5-7B-Instruct-Q4_K_M`
-  - **Prod**: vLLM (`http://gpu-cluster:8000/v1`) com `Llama-3.1-Nemotron-70B-Instruct-AWQ`
+- **Engines Suportadas (100% Containerizadas)**:
+  - **Dev**: Container `ollama` (`http://ollama:11434/v1`) com `qwen2.5:7b-instruct-q4_K_M` e GPU passthrough
+  - **Prod**: Container `vllm` (`http://llm_engine:8000/v1`) com `Llama-3.1-Nemotron-70B-Instruct-AWQ`
 
-### Executable Commands:
+### Executable Docker Commands:
 ```bash
-# Executar testes unitários com mocks de chamadas LLM
-pytest backend/tests/unit/cognitive -v
+# Inicializar o container Ollama com GPU passthrough
+docker compose -f docker-compose.dev.yml up -d ollama
+
+# Baixar o modelo dentro do container Ollama
+docker compose -f docker-compose.dev.yml exec ollama ollama pull qwen2.5:7b-instruct-q4_K_M
+
+# Executar testes unitários com mocks de chamadas LLM no container backend
+docker compose -f docker-compose.dev.yml exec backend pytest tests/unit/cognitive -v
 
 # Validar prompts e testes de regressão de schema JSON
-pytest backend/tests/integration/cognitive/test_llm_contracts.py -v
+docker compose -f docker-compose.dev.yml exec backend pytest tests/integration/cognitive/test_llm_contracts.py -v
 ```
 
 ---

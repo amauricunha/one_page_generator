@@ -25,13 +25,13 @@ O pipeline deve extrair textos, tabelas orçamentárias e metadados de PDFs hete
 - **Bibliotecas**: PyMuPDF (`fitz` 1.24+), `pdfplumber`, `docTR` (com PyTorch), `Pydantic v2`
 - **Isolamento de Hardware**: Execução forçada em **CPU** (`device="cpu"`) em ambiente Dev para garantir a integridade da VRAM da GPU Ada 1000.
 
-### Executable Commands:
+### Executable Docker Commands:
 ```bash
-# Executar testes unitários e de integração de extração
-pytest backend/tests/integration/extractors -v -k "test_pdf_extraction"
+# Executar testes unitários e de integração de extração no container backend
+docker compose -f docker-compose.dev.yml exec backend pytest tests/integration/extractors -v -k "test_pdf_extraction"
 
-# Executar benchmark de extração e cálculo de TSI
-python backend/src/adapters/extractors/benchmark_ingestion.py --sample-pdf docs/samples/cybertech_sample.pdf
+# Executar benchmark de extração e cálculo de TSI dentro do container
+docker compose -f docker-compose.dev.yml exec backend python src/adapters/extractors/benchmark_ingestion.py --sample-pdf docs/samples/cybertech_sample.pdf
 ```
 
 ---

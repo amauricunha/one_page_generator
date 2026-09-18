@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "axum-web-framework": {
+      "source": "manutej/luxor-claude-marketplace",
+      "sourceType": "github",
+      "skillPath": "plugins/luxor-backend-toolkit/skills/axum-web-framework/SKILL.md",
+      "computedHash": "6a71e5703b3910114c1faed59ba872d7ca92fc80f8d0c1d62c95a0cfbfcaa56b"
+    },
     "clean-architecture": {
       "source": "tokenaissance/clean-architecture",
       "sourceType": "github",
@@ -13,11 +19,29 @@
       "skillPath": "templates/skills/clean-code/SKILL.md",
       "computedHash": "c07507509fe3091065b67aa96ef895cbde0ad9a0189622956e8bfc6569ae469d"
     },
+    "database-schema-design": {
+      "source": "pixel-process-ug/superkit-agents",
+      "sourceType": "github",
+      "skillPath": "templates/skills/database-schema-design/SKILL.md",
+      "computedHash": "3f58e10b23eb2792f85c9aa1ae73fc383c0bba4405566affa6366136e2ea467f"
+    },
+    "oauth-implementation": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "oauth-implementation/SKILL.md",
+      "computedHash": "451ce99b5d15c32fc4e7ed79223e59530093156fd8a3e80434a677a2d7601faf"
+    },
     "pdf-processing": {
       "source": "pixel-process-ug/superkit-agents",
       "sourceType": "github",
       "skillPath": "templates/skills/pdf-processing/SKILL.md",
       "computedHash": "397e384b9797d2e6cb0cf1e2e9ae6926cda0ff51b59cb5a070f4865bca9bcb68"
+    },
+    "security-review": {
+      "source": "pixel-process-ug/superkit-agents",
+      "sourceType": "github",
+      "skillPath": "templates/skills/security-review/SKILL.md",
+      "computedHash": "69eeebe294cd4e2011f7a4bfe6c41c5e05b0cf0fbd3845b168fd6130c9492a71"
     },
     "senior-architect": {
       "source": "pixel-process-ug/superkit-agents",

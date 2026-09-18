@@ -116,33 +116,40 @@ export interface IReportRepository {
 
 ---
 
-## 3. Topologia de Infraestrutura e Orçamento de Hardware
+## 3. Topologia de Infraestrutura e Containerização Total (Docker)
 
-O sistema adota isolamento rígido de hardware on-premise, garantindo conformidade com a LGPD e o segredo industrial das propostas de PD&I.
+> ⚠️ **DIRETRIZ DE ENGENHARIA**: Todos os componentes do sistema (Ollama, vLLM, Backend API, Frontend SPA, PostgreSQL e Puppeteer) são **100% containerizados via Docker**. É terminantemente proibida a execução direta no host (*bare-metal*). A GPU corporativa é exposta aos containers via NVIDIA Container Toolkit (`capabilities: [gpu]`).
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        AMBIENTE DE DESENVOLVIMENTO (Edge / Local)                      │
-│ GPU: 1x NVIDIA RTX Ada 1000 (6GB VRAM GDDR6)                                           │
+│             AMBIENTE DE DESENVOLVIMENTO CONTAINERIZADO (docker-compose.dev.yml)        │
+│ GPU: 1x NVIDIA RTX Ada 1000 (6GB VRAM GDDR6) com Passthrough Docker                    │
 │ ┌────────────────────────────────────────────────────────────────────────────────────┐ │
-│ │ ORÇAMENTO DE VRAM (Total Alocado: 5.6 GB / Limite: 6.0 GB)                        │ │
+│ │ CONTAINER `onepage_ollama_dev` (Ollama com GPU Passthrough)                        │ │
 │ │ • Modelo Qwen2.5-7B-Instruct (GGUF Q4_K_M): 4.2 GB                                 │ │
 │ │ • KV Cache Contextual (4.096 tokens): 0.8 GB                                       │ │
-│ │ • CUDA Runtime & Memory Safety Margin: 0.6 GB                                      │ │
+│ │ • CUDA Runtime & Safety Margin: 0.6 GB (Total Alocado: 5.6 GB / 6.0 GB)           │ │
+│ ├────────────────────────────────────────────────────────────────────────────────────┤ │
+│ │ CONTAINER `onepage_backend_dev` (FastAPI / docTR / PyMuPDF)                        │ │
+│ │ • OCR Neural docTR executado exclusivamente em CPU (`device="cpu"`)                │ │
+│ ├────────────────────────────────────────────────────────────────────────────────────┤ │
+│ │ CONTAINER `onepage_frontend_dev` (Vite SPA com Hot-Reload na porta 3000)          │ │
+│ ├────────────────────────────────────────────────────────────────────────────────────┤ │
+│ │ CONTAINER `onepage_postgres_dev` (PostgreSQL 16 com volume persistente)            │ │
 │ └────────────────────────────────────────────────────────────────────────────────────┘ │
-│ NOTA: OCR Pesado (Marker/docTR) é delegado à CPU para prevenir CUDA OOM!              │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        AMBIENTE DE PRODUÇÃO (Servidor On-Premise)                      │
-│ GPU: 1x NVIDIA RTX 3090 (24GB VRAM GDDR6X)                                            │
+│             AMBIENTE DE PRODUÇÃO CONTAINERIZADO (docker-compose.yml)                   │
+│ GPU: 1x NVIDIA RTX 3090 (24GB VRAM GDDR6X) com Passthrough Docker                     │
 │ ┌────────────────────────────────────────────────────────────────────────────────────┐ │
-│ │ ORÇAMENTO DE VRAM (Total Alocado: 23.0 GB / Limite: 24.0 GB)                       │ │
+│ │ CONTAINER `onepage_llm_prod` (vLLM Engine com --gpus all)                          │ │
 │ │ • Modelo Llama-3.1-Nemotron-70B-Instruct-AWQ (INT4): 18.5 GB                       │ │
 │ │ • PagedAttention Dynamic KV Cache (16.384 tokens): 3.0 GB                          │ │
-│ │ • CUDA Kernels & Framework Overhead: 1.5 GB                                        │ │
+│ │ • CUDA Kernels & Overhead: 1.5 GB (Total Alocado: 23.0 GB / 24.0 GB)               │ │
+│ ├────────────────────────────────────────────────────────────────────────────────────┤ │
+│ │ CONTAINERS `onepage_backend` (API Multi-Worker) + `onepage_postgres` (Postgres 16) │ │
 │ └────────────────────────────────────────────────────────────────────────────────────┘ │
-│ vLLM Flag: --gpu-memory-utilization 0.95 --max-model-len 16384                        │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -383,3 +390,30 @@ gantt
 2. **Taxa de Overflow Zero no PDF**: O documento exportado deve possuir exatamente 1 página A4 vetorial ($210\text{mm} \times 297\text{mm}$) em 100% dos testes homologados.
 3. **Latência de Inferência Local**: Reescrita localizada em $< 1.5\text{s}$ no vLLM e condensação total em $< 4.0\text{s}$.
 4. **Isolamento de Memória**: Testes em GPU de 6GB executados sem ocorrência de erro OOM durante o ciclo completo de ingestão e geração.
+
+---
+
+## 10. Roadmap de Escala Corporativa (V2): Rust Axum, PostgreSQL, Auth & Preferences
+
+Para a fase subsequente de produção corporativa em larga escala, o sistema evolui sobre a especificação formal [`docs/specs/SPEC-future-scale.md`](file:///c:/workspace/one_page_generator/docs/specs/SPEC-future-scale.md):
+
+### 10.1. Backend de Alta Performance em Rust (Axum)
+- Transição do orchestrator para **Rust 1.82+** com **Axum** e **Tokio**, garantindo concorrência massiva, menor consumo de memória RAM/CPU e segurança de memória em tempo de compilação.
+
+### 10.2. Persistência Relacional em PostgreSQL & Migrations Versionadas
+- Substituição do armazenamento exclusivamente local por instâncias dedicadas de **PostgreSQL 16**.
+- Governança de esquema via `sqlx migrate` com scripts versionados (`migrations/`), transações atômicas e migrações bidirecionais (`up` e `down`).
+- Modelagem de entidades relacionais: `users`, `user_profiles`, `user_preferences`, `report_templates`, `project_drafts` e `archived_documents`.
+
+### 10.3. Arquivamento Auditável de Documentos
+- Persistência e indexação de todos os PDFs brutos submetidos para fomento, com controle de versão e cálculo obrigatório de hash **SHA-256** para auditoria e conformidade técnica.
+
+### 10.4. Autenticação Híbrida & Gestão de Contas
+- **E-mail / Senha**: Hash criptográfico via `Argon2id` com sal aleatório.
+- **Social Login**: Integração com **Google OAuth 2.0 / OpenID Connect**.
+- **Complemento de Perfil Opcional**: Possibilidade de informar cargo, unidade executora (SENAI/SESI/FIESC) e instituição parceira pós-login.
+- **Sessões Seguras**: Tokens JWT de curta duração com Refresh Tokens armazenados em cookies `HttpOnly` com proteção CSRF.
+
+### 10.5. Modo Claro e Modo Escuro (UI) vs Temas do Relatório
+- **Tema da Aplicação**: Modo Claro (`light`) e Modo Escuro (`dark`) configuráveis nas preferências do usuário para toda a interface do sistema (toolbar, sidebar, modais).
+- **Tema do Documento A4**: Preservação inviolável da folha física A4 sobre fundo branco ($#FFFFFF$), garantindo que a alternância do tema da interface nunca contamine a fidelidade da impressão oficial.

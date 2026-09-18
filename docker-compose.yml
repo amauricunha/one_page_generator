@@ -1,0 +1,103 @@
+version: "3.9"
+
+services:
+  # -------------------------------------------------------------
+  # Frontend: Single Page Application (React + Vite + Nginx)
+  # -------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: onepage_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - onepage_net
+
+  # -------------------------------------------------------------
+  # Backend API & Orchestration (FastAPI / PyMuPDF / docTR)
+  # -------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: onepage_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - COGNITIVE_ENGINE_URL=http://llm_engine:8000/v1
+      - COGNITIVE_MODEL_NAME=Llama-3.1-Nemotron-70B-Instruct-AWQ
+      - OCR_EXECUTION_DEVICE=cpu
+      - DATABASE_URL=postgresql://onepage_user:onepage_pass@postgres:5432/onepage_db
+    volumes:
+      - archived_documents_data:/app/storage/archived_docs
+    depends_on:
+      - postgres
+      - llm_engine
+    networks:
+      - onepage_net
+
+  # -------------------------------------------------------------
+  # LLM Inference Engine (vLLM em Produção com GPU Passthrough)
+  # -------------------------------------------------------------
+  llm_engine:
+    image: vllm/vllm-openai:v0.6.3
+    container_name: onepage_llm_prod
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    environment:
+      - MODEL=nvidia/Llama-3.1-Nemotron-70B-Instruct-AWQ
+      - GPU_MEMORY_UTILIZATION=0.95
+      - MAX_MODEL_LEN=16384
+    volumes:
+      - vllm_models_cache:/root/.cache/huggingface
+    ipc: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - onepage_net
+
+  # -------------------------------------------------------------
+  # Banco de Dados PostgreSQL (Modelos, Projetos e Usuários)
+  # -------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: onepage_postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=onepage_db
+      - POSTGRES_USER=onepage_user
+      - POSTGRES_PASSWORD=onepage_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U onepage_user -d onepage_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - onepage_net
+
+networks:
+  onepage_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  archived_documents_data:
+  vllm_models_cache:

@@ -26,15 +26,15 @@ Garante a injeção correta de dependências (DIP), tratamento global de exceç�
 - **Validação**: Pydantic v2
 - **Testes de API**: `pytest`, `pytest-asyncio`, `httpx`
 
-### Executable Commands:
+### Executable Docker Commands:
 ```bash
-# Iniciar servidor em modo de desenvolvimento (com auto-reload)
-uvicorn backend.src.infrastructure.api.main:app --host 0.0.0.0 --port 8000 --reload
+# Iniciar a API em container de desenvolvimento (com live-reload)
+docker compose -f docker-compose.dev.yml up -d backend
 
-# Executar testes de integração de API
-pytest backend/tests/integration/api -v
+# Executar testes de integração de API dentro do container
+docker compose -f docker-compose.dev.yml exec backend pytest tests/integration/api -v
 
-# Gerar e verificar documentação OpenAPI (Swagger)
+# Verificar documentação OpenAPI (Swagger) exposta pelo container
 curl http://localhost:8000/openapi.json
 ```
 
